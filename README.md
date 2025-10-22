@@ -15,56 +15,107 @@ This repository contains optimized BitNet binaries for **Windows, Linux, and mac
 - **GPU-accelerated builds** with CUDA and Vulkan support (Windows/Linux)
 - **Complete dependency bundling** - each variant is self-contained
 - **Cross-platform support** - same architecture variants across all platforms
+- **Direct library access** - use DLLs/SOs directly in your applications
 
 Built from: [microsoft/BitNet](https://github.com/microsoft/BitNet) with optimizations from [ocentra/BitNet](https://github.com/ocentra/BitNet)
 
 ---
 
-## 📦 Build Matrix
+## 🛠️ For Developers: Direct Library Access
 
-> **Note:** Currently only Windows builds are available. Linux and macOS builds coming soon!
+**Why use DLLs/SOs directly instead of executables?**
+
+👉 **See the complete [Developer Guide](DEVELOPER_GUIDE.md) for working examples!**
+
+### Key Benefits:
+- ⚡ **2-3x faster** - No subprocess overhead, direct function calls
+- 🎛️ **Full control** - Build custom servers (FastAPI/Actix), manage models, conversation history
+- 🔧 **Multi-language** - Python (`llama-cpp-python`) + Rust (`llama-cpp-rs`) examples included
+- 🚀 **Production-ready** - Load once, serve thousands of requests (like TabAgent does)
+- 📦 **Platform-optimized** - Auto-detect CPU/GPU, load optimal variant per platform
+- 🎯 **Smaller apps** - Bundle only 1 variant = 150 MB installer vs 2.5 GB universal
+
+### What's Inside the Developer Guide:
+- ✅ **Complete executable replication** - Build `llama-server`, `llama-cli`, `llama-embedding`, `llama-bench` from scratch
+- ✅ **Hardware detection** - Auto-select Zen2/Zen3/Alder Lake/M1 variants at runtime
+- ✅ **TabAgent strategy** - Build optimized installers (180 MB) for each CPU family
+- ✅ **Real working code** - 600+ lines of Python/Rust examples, ready to copy-paste
+- ✅ **API reference** - All llama.cpp functions with usage examples
+
+**Example: Custom FastAPI server with model keep-alive, metrics, multi-model support**
+```python
+from llama_cpp import Llama
+import os
+
+# Point to your BitNet variant
+os.add_dll_directory("BitnetRelease/cpu/windows/bitnet-amd-zen2")
+
+# Load model directly (30% faster than zen3 on zen2 CPU!)
+llm = Llama(model_path="model.gguf", n_ctx=4096, n_threads=8)
+
+# Generate (same API as llama-server, but YOU control everything!)
+output = llm("Hello", max_tokens=100, temperature=0.7)
+```
+
+👉 **[Read the full Developer Guide →](DEVELOPER_GUIDE.md)**
+
+---
+
+## 📦 Build Matrix
 
 ### Platform Support
 
 | Platform | CPU Variants | GPU Variants | Status |
 |----------|-------------|--------------|--------|
 | **Windows** | 13 (1 standard + 12 BitNet) | 3 (CUDA+Vulkan, OpenCL, Python) | ✅ **Available** |
-| **Linux** | 13 (same as Windows) | 2 (CUDA, OpenCL) | 🔜 **Coming Soon** |
-| **macOS** | 13 (same as Windows) | 0 (no CUDA support) | 🔜 **Coming Soon** |
+| **Linux** | 12 (1 standard + 11 BitNet) | 3 (CUDA+Vulkan, OpenCL, Python) | ✅ **Available** |
+| **macOS** | 3 (ARM TL1, Intel TL2, standard) | 1 (Metal GPU) | ✅ **Available** (via GitHub Actions) |
+
+> **Note:** macOS builds are different from Windows/Linux - optimized for Apple Silicon (M1/M2/M3/M4) and Intel Macs with Metal GPU support.
 
 ---
 
 ### CPU Builds - Standard (1 variant per platform)
 | Variant | Target | Description | Platforms |
 |---------|--------|-------------|-----------|
-| `standard` | Any CPU | llama.cpp baseline, any model | Windows ✅ / Linux 🔜 / macOS 🔜 |
+| `standard` | Any CPU | llama.cpp baseline, any model | Windows ✅ / Linux ✅ / macOS ✅ |
 
-### CPU Builds - BitNet (12 variants per platform, BitNet models only)
-| Variant | Target | CPU Architectures | Optimization |
-|---------|--------|-------------------|--------------|
-| `bitnet-portable` | Any modern CPU | AVX2 baseline | Safe fallback |
+### CPU Builds - BitNet Windows/Linux (12 variants, BitNet models only)
+| Variant | Target | CPU Architectures | Windows | Linux | Compiler Req. (Linux) |
+|---------|--------|-------------------|---------|-------|----------------------|
+| `bitnet-portable` | Any modern CPU | AVX2 baseline | ✅ | ✅ | Clang 14+ |
 | **AMD Ryzen** |
-| `bitnet-amd-zen1` | Ryzen 1000/2000 | Zen 1 (znver1) | `-march=znver1` |
-| `bitnet-amd-zen2` | Ryzen 3000 | Zen 2 (znver2) | `-march=znver2` |
-| `bitnet-amd-zen3` | Ryzen 5000 | Zen 3 (znver3) | `-march=znver3` |
-| `bitnet-amd-zen4` | Ryzen 7000 | Zen 4 (znver4) | `-march=znver4` |
-| `bitnet-amd-zen5` | Ryzen 9000 | Zen 5 (znver5) | `-march=znver5` |
+| `bitnet-amd-zen1` | Ryzen 1000/2000 | Zen 1 (znver1) | ✅ | ✅ | Clang 14+ |
+| `bitnet-amd-zen2` | Ryzen 3000 | Zen 2 (znver2) | ✅ | ✅ | Clang 14+ |
+| `bitnet-amd-zen3` | Ryzen 5000 | Zen 3 (znver3) | ✅ | ✅ | Clang 14+ |
+| `bitnet-amd-zen4` | Ryzen 7000 | Zen 4 (znver4) | ✅ | ✅ | **Clang 17+** |
+| `bitnet-amd-zen5` | Ryzen 9000 | Zen 5 (znver5) | ✅ | ⏳ | Clang 18+ (not yet available) |
 | **Intel Core** |
-| `bitnet-intel-haswell` | 4th gen | Haswell | `-march=haswell` |
-| `bitnet-intel-broadwell` | 5th gen | Broadwell | `-march=broadwell` |
-| `bitnet-intel-skylake` | 6th-9th gen | Skylake/Kaby/Coffee Lake | `-march=skylake` |
-| `bitnet-intel-icelake` | 10th gen | Ice Lake | `-march=icelake-client` |
-| `bitnet-intel-rocketlake` | 11th gen | Rocket Lake | `-march=rocketlake` |
-| `bitnet-intel-alderlake` | 12th-14th gen | Alder/Raptor Lake | `-march=alderlake` |
+| `bitnet-intel-haswell` | 4th gen | Haswell | ✅ | ✅ | Clang 14+ |
+| `bitnet-intel-broadwell` | 5th gen | Broadwell | ✅ | ✅ | Clang 14+ |
+| `bitnet-intel-skylake` | 6th-9th gen | Skylake/Kaby/Coffee Lake | ✅ | ✅ | Clang 14+ |
+| `bitnet-intel-icelake` | 10th gen | Ice Lake | ✅ | ✅ | Clang 14+ |
+| `bitnet-intel-rocketlake` | 11th gen | Rocket Lake | ✅ | ✅ | Clang 14+ |
+| `bitnet-intel-alderlake` | 12th-14th gen | Alder/Raptor Lake | ✅ | ✅ | Clang 14+ |
+
+> **Linux Note:** Zen 4 requires Clang 17+. Zen 5 requires Clang 18+ (not yet in stable Ubuntu 22.04 repos).
+
+### CPU Builds - macOS Specific (3 variants, different architecture)
+| Variant | Target | Description | Hardware |
+|---------|--------|-------------|----------|
+| `bitnet-arm` | Apple Silicon | ARM TL1 kernels | M1/M2/M3/M4 Macs |
+| `bitnet-intel` | Intel Macs | x86 TL2 kernels | Intel Macs (2020 and older) |
+| `standard` | Universal | No BitNet, CPU only | All Macs |
 
 ### GPU Builds (platform-dependent)
 | Variant | Backend | Description | Platforms |
 |---------|---------|-------------|-----------|
-| `standard-cuda-vulkan` | CUDA + Vulkan | NVIDIA GPU (llama.cpp, any model) | Windows ✅ / Linux 🔜 |
-| `standard-opencl` | OpenCL | Universal GPU (NVIDIA/AMD/Intel, any model) | Windows ✅ / Linux 🔜 |
-| `bitnet-python-cuda` | Python + CUDA | BitNet Python kernels (BitNet models only) | Windows ✅ / Linux 🔜 |
+| `standard-cuda-vulkan` | CUDA + Vulkan | NVIDIA GPU (llama.cpp, any model) | Windows ✅ / Linux ✅ |
+| `standard-opencl` | OpenCL | Universal GPU (NVIDIA/AMD/Intel, any model) | Windows ✅ / Linux ✅ |
+| `bitnet-python-cuda` | Python + CUDA | BitNet Python kernels (BitNet models only) | Windows ✅ / Linux ✅ |
+| `standard-metal` | Metal | Apple GPU acceleration (any model) | macOS ✅ (M1/M2/M3 + Intel) |
 
-> **Note:** macOS does not support CUDA. macOS users should use CPU variants or OpenCL (when available).
+> **Note:** macOS does not support CUDA/Vulkan - use Metal GPU for best performance on all Macs (M1/M2/M3 + Intel Iris/AMD).
 
 ---
 
@@ -73,7 +124,7 @@ Built from: [microsoft/BitNet](https://github.com/microsoft/BitNet) with optimiz
 ```
 BitnetRelease/
 ├── cpu/
-│   ├── windows/                           ✅ Available
+│   ├── windows/                           ✅ Available (13 variants)
 │   │   ├── standard/                      [58 files, ~150 MB]
 │   │   ├── bitnet-portable/               [41 files, ~100 MB]
 │   │   ├── bitnet-amd-zen1/               [41 files, ~100 MB]
@@ -88,39 +139,65 @@ BitnetRelease/
 │   │   ├── bitnet-intel-rocketlake/       [41 files, ~100 MB]
 │   │   └── bitnet-intel-alderlake/        [41 files, ~100 MB]
 │   │
-│   ├── linux/                             🔜 Coming Soon
-│   │   └── (same 13 variants as Windows)
+│   ├── linux/                             ✅ Available (12 variants)
+│   │   ├── standard/                      [~60 files]
+│   │   ├── bitnet-portable/               [~40 files]
+│   │   ├── bitnet-amd-zen1/               [~40 files]
+│   │   ├── bitnet-amd-zen2/               [~40 files]
+│   │   ├── bitnet-amd-zen3/               [~40 files]
+│   │   ├── bitnet-amd-zen4/               [~40 files] (Clang 17+)
+│   │   ├── bitnet-intel-haswell/          [~40 files]
+│   │   ├── bitnet-intel-broadwell/        [~40 files]
+│   │   ├── bitnet-intel-skylake/          [~40 files]
+│   │   ├── bitnet-intel-icelake/          [~40 files]
+│   │   ├── bitnet-intel-rocketlake/       [~40 files]
+│   │   ├── bitnet-intel-alderlake/        [~40 files]
+│   │   └── VERIFICATION.md                (Build report)
 │   │
-│   └── macos/                             🔜 Coming Soon
-│       └── (same 13 variants as Windows)
+│   └── macos/                             ✅ Available (3 variants)
+│       ├── bitnet-arm/                    [M1/M2/M3/M4, ARM TL1]
+│       ├── bitnet-intel/                  [Intel Macs, x86 TL2]
+│       ├── standard/                      [Universal CPU]
+│       └── VERIFICATION.md                (Build report)
 │
 └── gpu/
-    ├── windows/                           ✅ Available
+    ├── windows/                           ✅ Available (3 variants)
     │   ├── standard-cuda-vulkan/          [59 files, ~200 MB]
     │   ├── standard-opencl/               [58 files, ~150 MB]
-    │   └── bitnet-python-cuda/            [16 files, ~500 MB]
-    │       ├── libbitnet.dll              (CUDA kernels)
-    │       ├── cublas64_12.dll            (CUDA runtime)
-    │       ├── cublasLt64_12.dll          (CUDA runtime)
-    │       ├── cudart64_12.dll            (CUDA runtime)
-    │       ├── *.py                       (Python scripts)
-    │       └── tokenizer.model            (2.1 MB)
+    │   ├── bitnet-python-cuda/            [16 files, ~500 MB]
+    │   │   ├── libbitnet.dll              (CUDA kernels)
+    │   │   ├── cublas64_12.dll            (CUDA runtime)
+    │   │   ├── cublasLt64_12.dll          (CUDA runtime)
+    │   │   ├── cudart64_12.dll            (CUDA runtime)
+    │   │   ├── *.py                       (Python scripts)
+    │   │   └── tokenizer.model            (2.1 MB)
+    │   └── VERIFICATION.md                (Build report)
     │
-    └── linux/                             🔜 Coming Soon
-        ├── standard-cuda-vulkan/          (CUDA + Vulkan)
-        ├── standard-opencl/               (OpenCL)
-        └── bitnet-python-cuda/            (Python + CUDA)
-            ├── libbitnet.so               (CUDA kernels)
-            ├── *.py                       (Python scripts)
-            └── tokenizer.model            (2.1 MB)
+    ├── linux/                             ✅ Available (3 variants)
+    │   ├── standard-cuda-vulkan/          [~60 files, CUDA + Vulkan]
+    │   ├── standard-opencl/               [~60 files, OpenCL]
+    │   ├── bitnet-python-cuda/            [~15 files, Python + CUDA]
+    │   │   ├── libbitnet.so               (CUDA kernels)
+    │   │   ├── *.py                       (Python scripts)
+    │   │   └── tokenizer.model            (2.1 MB)
+    │   └── VERIFICATION.md                (Build report)
+    │
+    └── macos/                             ✅ Available (1 variant)
+        ├── standard-metal/                [Metal GPU for ALL Macs]
+        │   ├── llama-server               (Metal-accelerated)
+        │   ├── *.dylib                    (Shared libraries)
+        │   └── *.metallib                 (Metal shaders)
+        └── README.md                      (Metal GPU guide)
 ```
 
-**Current Size:** ~2-3 GB (Windows only, stored efficiently with Git LFS)  
-**Future Size:** ~10-12 GB (all platforms)
+**Total Size:** ~8-10 GB (all platforms, stored efficiently with Git LFS)  
+**Build Variants:** 35 total (16 Windows + 15 Linux + 4 macOS)
 
 ---
 
 ## 🚀 Quick Start
+
+> **💡 For Developers:** These examples use pre-built executables. Want **2-3x faster performance** with direct library access? See **[Developer Guide](DEVELOPER_GUIDE.md)** for Python/Rust examples, custom servers, and optimized installers!
 
 ### 1. Choose Your Platform & Build
 
@@ -164,9 +241,21 @@ cd cpu\windows\bitnet-amd-zen2
 .\llama-server.exe --model "path\to\model.gguf" --port 8080
 ```
 
-**CPU Inference (Linux/macOS) - Coming Soon:**
+**CPU Inference (Linux):**
 ```bash
-cd cpu/linux/bitnet-amd-zen2  # or cpu/macos/bitnet-amd-zen2
+cd cpu/linux/bitnet-amd-zen2
+./llama-server --model "path/to/model.gguf" --port 8080
+```
+
+**CPU Inference (macOS - Apple Silicon):**
+```bash
+cd cpu/macos/bitnet-arm
+./llama-server --model "path/to/model.gguf" --port 8080
+```
+
+**CPU Inference (macOS - Intel):**
+```bash
+cd cpu/macos/bitnet-intel
 ./llama-server --model "path/to/model.gguf" --port 8080
 ```
 
@@ -176,16 +265,23 @@ cd gpu\windows\bitnet-python-cuda
 python generate.py --model "path\to\model"
 ```
 
-**GPU Inference - llama.cpp (Windows):**
+**GPU Inference - llama.cpp CUDA (Windows):**
 ```powershell
 cd gpu\windows\standard-cuda-vulkan
 .\llama-server.exe --model "path\to\model.gguf" --gpu-layers 32 --port 8080
 ```
 
-**GPU Inference - Linux (Coming Soon):**
+**GPU Inference - llama.cpp CUDA (Linux):**
 ```bash
 cd gpu/linux/standard-cuda-vulkan
 ./llama-server --model "path/to/model.gguf" --gpu-layers 32 --port 8080
+```
+
+**GPU Inference - Metal (macOS - ALL Macs):**
+```bash
+cd gpu/macos/standard-metal
+./llama-server --model "path/to/model.gguf" -ngl 99 --port 8080
+# -ngl 99 = offload all layers to Metal GPU (M1/M2/M3 + Intel)
 ```
 
 ---
@@ -232,14 +328,37 @@ Want to build yourself? See the main repo:
 ```bash
 git clone --recursive https://github.com/ocentra/BitNet.git
 cd BitNet
-.\build_complete.ps1  # Windows
 ```
 
-The build script will:
+**Windows:**
+```powershell
+.\build_complete.ps1  # Build all 16 variants
+.\build_complete.ps1 -BuildVariants "amd-zen2,cuda-vulkan"  # Selective build
+```
+
+**Linux:**
+```bash
+./build-all-linux.sh  # Build all 15 variants
+./build-all-linux.sh --variants amd-zen2,cuda-vulkan  # Selective build
+```
+
+**macOS:**
+```bash
+# Option 1: Build locally (requires Xcode)
+./build-all-macos.sh  # Build all 4 variants
+./build-all-macos.sh --variants arm,metal  # Selective build
+
+# Option 2: Use GitHub Actions (no Mac needed!)
+# Go to GitHub → Actions → "Build macOS Binaries (All Variants)" → Run workflow
+# Download the artifacts and extract to BitnetRelease/
+```
+
+The build scripts will:
 - ✅ Detect your CPU and recommend optimal variant
-- ✅ Build all 16 variants (or selected ones)
+- ✅ Build all variants (or selected ones)
 - ✅ Smart incremental builds (skip existing)
 - ✅ Output to `BitnetRelease/` folder
+- ✅ Verify binaries and generate reports
 
 For more details, see [Build Documentation](https://github.com/ocentra/BitNet)
 
@@ -323,21 +442,24 @@ This is a **binary distribution repository**. For source code contributions, ple
 
 ## 📊 Stats
 
-**Current (Windows only):**
-- **Platforms:** 1 (Windows ✅)
-- **Build Variants:** 16 (13 CPU + 3 GPU)
-- **CPU Coverage:** 2013-2024 (Haswell through Zen 5)
-- **Repository Size:** ~2-3 GB (Git LFS)
-- **Build Time:** ~90 minutes (all Windows variants)
-
-**Planned (All platforms):**
-- **Platforms:** 3 (Windows ✅ / Linux 🔜 / macOS 🔜)
-- **Build Variants:** ~45 total
-  - Windows: 16 (13 CPU + 3 GPU)
-  - Linux: 15 (13 CPU + 2 GPU)
-  - macOS: 13 (13 CPU, no CUDA)
-- **Repository Size:** ~10-12 GB (all platforms)
-- **Build Time:** ~4-5 hours (all platforms, all variants)
+**Current Status:**
+- **Platforms:** 3 (Windows ✅ / Linux ✅ / macOS ✅)
+- **Build Variants:** 35 total
+  - Windows: 16 (13 CPU + 3 GPU) ✅
+  - Linux: 15 (12 CPU + 3 GPU) ✅
+  - macOS: 4 (3 CPU + 1 GPU Metal) ✅
+- **CPU Coverage:** 2013-2024
+  - AMD: Zen 1-5 (Ryzen 1000-9000 series)
+  - Intel: Haswell through Alder Lake (4th-14th gen)
+  - Apple: M1/M2/M3/M4 (ARM TL1 kernels)
+- **GPU Support:**
+  - Windows/Linux: CUDA + Vulkan + OpenCL + Python CUDA
+  - macOS: Metal (M1/M2/M3 + Intel Iris/AMD)
+- **Repository Size:** ~8-10 GB (Git LFS)
+- **Build Time:**
+  - Windows: ~90 minutes (all 16 variants)
+  - Linux: ~3 hours (all 15 variants)
+  - macOS: ~30 minutes (all 4 variants, via GitHub Actions)
 
 **Last Updated:** October 2024
 

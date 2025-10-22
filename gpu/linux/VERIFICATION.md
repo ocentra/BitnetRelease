@@ -59,6 +59,7 @@ The `-ngl` flag controls how many layers run on GPU:
 
 - **bitnet-python-cuda/**: 15 files
 - **standard-cuda-vulkan/**: 56 files
+- **standard-opencl/**: 55 files
 
 ---
-Build Date: Tue Oct 21 20:52:22 EDT 2025
+Build Date: Tue Oct 21 21:18:33 EDT 2025
