@@ -73,6 +73,8 @@ output = llm("Hello", max_tokens=100, temperature=0.7)
 
 > **Note:** macOS builds are different from Windows/Linux - optimized for Apple Silicon (M1/M2/M3/M4) and Intel Macs with Metal GPU support.
 
+> **⚠️ Intel Mac Users:** The `bitnet-intel` variant is **not included** in GitHub Actions builds (ARM runners can't cross-compile to x86). GitHub Actions builds **only `bitnet-arm`** and **`standard`**. For Intel Mac builds, you'll need to run `build-all-macos.sh` locally on an Intel Mac... *which we'll provide when we get our hands on one! 😅* (Intel Macs are legacy hardware discontinued in 2020 - if you have one, the `standard` build works fine!)
+
 ---
 
 ### CPU Builds - Standard (1 variant per platform)
@@ -103,9 +105,11 @@ output = llm("Hello", max_tokens=100, temperature=0.7)
 ### CPU Builds - macOS Specific (3 variants, different architecture)
 | Variant | Target | Description | Hardware |
 |---------|--------|-------------|----------|
-| `bitnet-arm` | Apple Silicon | ARM TL1 kernels | M1/M2/M3/M4 Macs |
-| `bitnet-intel` | Intel Macs | x86 TL2 kernels | Intel Macs (2020 and older) |
-| `standard` | Universal | No BitNet, CPU only | All Macs |
+| `bitnet-arm` | Apple Silicon | ARM TL1 kernels | M1/M2/M3/M4 Macs ✅ |
+| `bitnet-intel` | Intel Macs | x86 TL2 kernels | Intel Macs (2020 and older) 🚧 |
+| `standard` | Universal | No BitNet, CPU only | All Macs ✅ |
+
+> **🚧 `bitnet-intel` Status:** Not available in automated builds (GitHub Actions uses ARM runners). *Will provide when we get our hands on an Intel Mac... ooops! 😅* For now, Intel Mac users can use the `standard` build or build locally with `build-all-macos.sh`.
 
 ### GPU Builds (platform-dependent)
 | Variant | Backend | Description | Platforms |
@@ -154,10 +158,10 @@ BitnetRelease/
 │   │   ├── bitnet-intel-alderlake/        [~40 files]
 │   │   └── VERIFICATION.md                (Build report)
 │   │
-│   └── macos/                             ✅ Available (3 variants)
-│       ├── bitnet-arm/                    [M1/M2/M3/M4, ARM TL1]
-│       ├── bitnet-intel/                  [Intel Macs, x86 TL2]
-│       ├── standard/                      [Universal CPU]
+│   └── macos/                             ✅ Available (2 variants via GitHub Actions)
+│       ├── bitnet-arm/                    [M1/M2/M3/M4, ARM TL1] ✅
+│       ├── bitnet-intel/                  [Intel Macs, x86 TL2] 🚧 Not in downloads
+│       ├── standard/                      [Universal CPU] ✅
 │       └── VERIFICATION.md                (Build report)
 │
 └── gpu/
